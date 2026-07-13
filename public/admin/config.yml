@@ -1,0 +1,100 @@
+# Decap CMS Configuration for Delin HVAC Website
+# Access at: https://aquachilltech.com/admin/
+
+backend:
+  name: github
+  repo: bakeryserviceprovider-dot/gddelin-export
+  branch: master
+  base_url: https://aquachilltech.com
+  auth_endpoint: /api/auth              # OAuth endpoint
+
+media_folder: public/images/uploads     # Uploaded images saved here
+public_folder: /images/uploads          # Public URL path for images
+
+publish_mode: editorial_workflow        # Draft/Review/Publish workflow
+
+# ============================================================
+# SITE SETTINGS (global)
+# ============================================================
+collections:
+  - name: "settings"
+    label: "Site Settings"
+    files:
+      - name: "company"
+        label: "Company Info"
+        file: "src/lib/constants.ts"
+        description: "Edit company name, phone, email, address"
+        fields:
+          - { label: "Company Name", name: "company_name", widget: "string" }
+          - { label: "Phone", name: "phone", widget: "string" }
+          - { label: "Email", name: "email", widget: "string" }
+          - { label: "Address", name: "address", widget: "text" }
+
+  # ============================================================
+  # PRODUCTS
+  # ============================================================
+  - name: "products"
+    label: "Products"
+    label_singular: "Product"
+    folder: "src/content/products"
+    create: true
+    format: "frontmatter"
+    slug: "{{slug}}"
+    fields:
+      - { label: "Title", name: "title", widget: "string" }
+      - { label: "Subtitle", name: "subtitle", widget: "string" }
+      - { label: "Category", name: "category", widget: "select", options: ["Refrigeration Equipment", "Cooling Equipment", "Heat Exchanger Components"] }
+      - { label: "Description", name: "description", widget: "markdown" }
+      - { label: "Features", name: "features", widget: "list", field: { label: "Feature", name: "feature", widget: "string" } }
+      - { label: "Applications", name: "applications", widget: "list", field: { label: "Application", name: "app", widget: "string" } }
+      - label: "Specifications"
+        name: "specifications"
+        widget: "list"
+        fields:
+          - { label: "Label", name: "label", widget: "string" }
+          - { label: "Value", name: "value", widget: "string" }
+      - label: "Images"
+        name: "images"
+        widget: "list"
+        field: { label: "Image", name: "image", widget: "image" }
+      - label: "SEO"
+        name: "seo"
+        widget: "object"
+        fields:
+          - { label: "Meta Title", name: "title", widget: "string" }
+          - { label: "Meta Description", name: "description", widget: "text" }
+      - { label: "Certifications", name: "certifications", widget: "list", field: { label: "Cert", name: "cert", widget: "string" }, required: false }
+
+  # ============================================================
+  # BLOG
+  # ============================================================
+  - name: "blog"
+    label: "Blog Posts"
+    label_singular: "Blog Post"
+    folder: "src/content/blog"
+    create: true
+    format: "frontmatter"
+    slug: "{{slug}}"
+    fields:
+      - { label: "Title", name: "title", widget: "string" }
+      - { label: "Excerpt", name: "excerpt", widget: "text" }
+      - { label: "Publish Date", name: "date", widget: "datetime" }
+      - { label: "Author", name: "author", widget: "string", default: "Delin Engineering Team" }
+      - { label: "Category", name: "category", widget: "select", options: ["Buying Guide", "Technical Guide", "Maintenance", "Industry News", "Case Study"] }
+      - { label: "Tags", name: "tags", widget: "list", field: { label: "Tag", name: "tag", widget: "string" } }
+      - { label: "Cover Image", name: "coverImage", widget: "image", required: false }
+      - { label: "Reading Time (min)", name: "readingTime", widget: "number", value_type: "int" }
+      - { label: "Body", name: "body", widget: "markdown" }
+
+  # ============================================================
+  # PAGES
+  # ============================================================
+  - name: "pages"
+    label: "Pages"
+    files:
+      - name: "about"
+        label: "About Page"
+        file: "src/content/pages/about.md"
+        fields:
+          - { label: "Title", name: "title", widget: "string" }
+          - { label: "Content", name: "body", widget: "markdown" }
