@@ -13,7 +13,8 @@ export const COMPANY = {
   address:
     "Xin'an Industrial Zone, Danzao Town, Nanhai District, Foshan City, Guangdong Province, China",
   phone: "+8613247543939",
-  email: "",
+  email: ",
+  website: ",
   website: "https://aquachilltech.com",
   whatsapp: "+86-13247543939",
   workingHours: "Mon-Fri 8:30-17:30 (GMT+8)",
