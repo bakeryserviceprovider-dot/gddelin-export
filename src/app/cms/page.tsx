@@ -60,13 +60,17 @@ function extract(text: string, key: string): string {
 export default function CMSPage() {
   const [token, setToken] = useState("")
   const [authed, setAuthed] = useState(false); const [loaded, setLoaded] = useState(false)
-  const [view, setView] = useState<"list" | "edit">("list")
+  const [view, setView] = useState<"list" | "edit" | "upload">("list")
   const [fp, setFp] = useState(""); const [fl, setFl] = useState("")
   const [content, setContent] = useState(""); const [sha, setSha] = useState("")
   const [msg, setMsg] = useState(""); const [busy, setBusy] = useState(false)
   const [dialog, setDialog] = useState<"product" | "blog" | null>(null)
   const [newName, setNewName] = useState(""); const [newSlug, setNewSlug] = useState("")
   const [settings, setSettings] = useState<Record<string,string>>({})
+  const [uploadFile, setUploadFile] = useState<File | null>(null)
+  const [uploadPreview, setUploadPreview] = useState("")
+  const [uploadName, setUploadName] = useState("")
+  const [uploadTarget, setUploadTarget] = useState("products")
 
   useEffect(() => { const t = localStorage.getItem(TOKEN_KEY); if (t) { setToken(t); setAuthed(true) }; setLoaded(true) }, [])
 
@@ -111,6 +115,31 @@ export default function CMSPage() {
     setBusy(false)
   }
 
+  async function uploadImage() {
+    if (!uploadFile) { setMsg("请选择图片"); return }
+    const ext = uploadFile.name.split('.').pop() || 'jpg'
+    const fileName = uploadName.trim() || `product-${Date.now()}`
+    const path = uploadTarget === "products" ? `public/images/products/${fileName}.${ext}` : `public/images/blog/${fileName}.${ext}`
+    setBusy(true); setMsg("上传中...")
+    try {
+      // Read file as base64
+      const reader = new FileReader()
+      reader.onload = async () => {
+        const base64 = (reader.result as string).split(',')[1]
+        const r = await fetch(`${API}${encodeURIComponent(token)}&path=${encodeURIComponent(path)}`, {
+          method: "PUT", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: `上传图片: ${fileName}`, content: base64, branch: "master" })
+        })
+        const d = await r.json()
+        if (!r.ok) throw new Error(d.message || "上传失败")
+        setMsg(`✅ 上传成功！图片地址: /images/${uploadTarget}/${fileName}.${ext}`)
+        setUploadFile(null); setUploadPreview(""); setUploadName("")
+      }
+      reader.readAsDataURL(uploadFile)
+    } catch (e: any) { setMsg("❌ " + (e.message || "上传失败")) }
+    setBusy(false)
+  }
+
   async function createNew() {
     if (!newName) { setMsg("请输入名称"); return }
     const slug = newSlug || newName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")
@@ -146,6 +175,61 @@ export default function CMSPage() {
         <button onClick={() => { localStorage.setItem(TOKEN_KEY, token); setAuthed(true) }} disabled={!token}
           style={{ width: "100%", padding: 12, background: token ? "#2563eb" : "#94a3b8", color: "white", border: "none", borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: token ? "pointer" : "default" }}>
           登录
+        </button>
+      </div>
+    </main>
+  )
+
+  // =========== UPLOAD VIEW ===========
+  if (view === "upload") return (
+    <main style={{ minHeight: "100vh", background: "#f8fafc", padding: 24 }}>
+      <div style={{ maxWidth: 600, margin: "0 auto" }}>
+        <button onClick={() => { setView("list"); setMsg("") }} style={{ background: "none", border: "none", color: "#2563eb", cursor: "pointer", fontSize: 14, fontWeight: 500, marginBottom: 20 }}>← 返回首页</button>
+        <h1 style={{ fontSize: 22, fontWeight: 700, color: "#0f172a", marginBottom: 8 }}>🖼️ 上传图片</h1>
+        <p style={{ fontSize: 13, color: "#64748b", marginBottom: 24 }}>上传产品图片到网站，支持 JPG/PNG/WebP/SVG</p>
+
+        {msg && <Msg text={msg} />}
+
+        {/* Target folder selector */}
+        <div style={{ marginBottom: 16 }}>
+          <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#1e293b", marginBottom: 4 }}>上传到</label>
+          <div style={{ display: "flex", gap: 10 }}>
+            {["products", "blog"].map(t => (
+              <button key={t} onClick={() => setUploadTarget(t)}
+                style={{ padding: "8px 20px", borderRadius: 8, fontSize: 13, fontWeight: 500, cursor: "pointer", border: uploadTarget === t ? "2px solid #2563eb" : "1px solid #cbd5e1", background: uploadTarget === t ? "#eff6ff" : "white", color: uploadTarget === t ? "#2563eb" : "#475569" }}>
+                {t === "products" ? "📦 产品图片" : "📝 博客图片"}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* File name */}
+        <div style={{ marginBottom: 16 }}>
+          <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#1e293b", marginBottom: 4 }}>图片名称（可选）</label>
+          <input value={uploadName} onChange={e => setUploadName(e.target.value)} placeholder="留空则自动生成" style={{ width: "100%", padding: 10, border: "1px solid #cbd5e1", borderRadius: 8, fontSize: 14, outline: "none" }} />
+        </div>
+
+        {/* File picker */}
+        <div style={{ marginBottom: 16 }}>
+          <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#1e293b", marginBottom: 4 }}>选择图片 *</label>
+          <input type="file" accept="image/*" onChange={e => {
+            const f = e.target.files?.[0]
+            if (f) { setUploadFile(f); setUploadPreview(URL.createObjectURL(f)) }
+          }} style={{ width: "100%" }} />
+        </div>
+
+        {/* Preview */}
+        {uploadPreview && (
+          <div style={{ marginBottom: 16, borderRadius: 8, overflow: "hidden", border: "1px solid #e2e8f0", background: "#f8fafc", padding: 12, textAlign: "center" }}>
+            <img src={uploadPreview} alt="preview" style={{ maxHeight: 200, maxWidth: "100%", objectFit: "contain" }} />
+            <div style={{ fontSize: 12, color: "#94a3b8", marginTop: 6 }}>{uploadFile?.name} ({(uploadFile?.size || 0) / 1024 > 1024 ? ((uploadFile?.size || 0) / 1024 / 1024).toFixed(1) + 'MB' : ((uploadFile?.size || 0) / 1024).toFixed(0) + 'KB'})</div>
+          </div>
+        )}
+
+        {/* Upload button */}
+        <button onClick={uploadImage} disabled={busy || !uploadFile}
+          style={{ padding: "12px 32px", background: busy || !uploadFile ? "#94a3b8" : "#2563eb", color: "white", border: "none", borderRadius: 8, fontSize: 15, fontWeight: 600, cursor: busy || !uploadFile ? "default" : "pointer" }}>
+          {busy ? "上传中..." : "⬆️ 上传图片"}
         </button>
       </div>
     </main>
@@ -300,7 +384,7 @@ export default function CMSPage() {
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 10, marginBottom: 20 }}>
-          <Btn icon="🖼️" title="上传图片" href={`https://github.com/${REPO}/upload/master/public/images/products`} />
+          <Btn icon="🖼️" title="上传图片" onClick={() => { setMsg(""); setView("upload") }} />
           <Btn icon="✍️" title="新建博客" onClick={() => { setMsg(""); setDialog("blog") }} />
           <Btn icon="➕" title="新增产品" onClick={() => { setMsg(""); setDialog("product") }} />
           <Btn icon="📂" title="GitHub" href={`https://github.com/${REPO}`} />
