@@ -51,6 +51,12 @@ const FILES = [
   { label: "⚙️ 公司设置（代码文件）", path: "src/lib/constants.ts" },
 ]
 
+function extract(text: string, key: string): string {
+  const rx = new RegExp(key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*"([^"]*)"')
+  const m = text.match(rx)
+  return m ? m[1] : ""
+}
+
 export default function CMSPage() {
   const [token, setToken] = useState("")
   const [authed, setAuthed] = useState(false); const [loaded, setLoaded] = useState(false)
@@ -60,6 +66,7 @@ export default function CMSPage() {
   const [msg, setMsg] = useState(""); const [busy, setBusy] = useState(false)
   const [dialog, setDialog] = useState<"product" | "blog" | null>(null)
   const [newName, setNewName] = useState(""); const [newSlug, setNewSlug] = useState("")
+  const [settings, setSettings] = useState<Record<string,string>>({})
 
   useEffect(() => { const t = localStorage.getItem(TOKEN_KEY); if (t) { setToken(t); setAuthed(true) }; setLoaded(true) }, [])
 
@@ -71,6 +78,18 @@ export default function CMSPage() {
       const d = await r.json()
       const text = decodeURIComponent(escape(atob(d.content.replace(/\n/g, ""))))
       setSha(d.sha); setContent(text); setFp(path); setFl(label); setView("edit"); setMsg("")
+      if (path === "src/lib/constants.ts") {
+        setSettings({
+          name: extract(text, "name:"),
+          shortName: extract(text, "shortName:"),
+          slogan: extract(text, "slogan:"),
+          phone: extract(text, 'phone: "'),
+          email: extract(text, 'email: "'),
+          address: extract(text, "address:"),
+          whatsapp: extract(text, "whatsapp:"),
+          description: extract(text, "description:"),
+        })
+      }
     } catch (e: any) { setMsg("❌ " + (e.message || "加载失败")) }
     setBusy(false)
   }
@@ -131,6 +150,68 @@ export default function CMSPage() {
       </div>
     </main>
   )
+
+  // =========== SETTINGS FORM (constants.ts) ===========
+  if (view === "edit" && fp === "src/lib/constants.ts") {
+    const fields = [
+      { key: "name", label: "公司英文名" }, { key: "shortName", label: "简称" },
+      { key: "slogan", label: "口号" }, { key: "phone", label: "电话" },
+      { key: "email", label: "邮箱" }, { key: "address", label: "地址" },
+      { key: "whatsapp", label: "WhatsApp" },
+      { key: "description", label: "公司简介" },
+    ]
+    return (
+      <main style={{ minHeight: "100vh", background: "#f8fafc", padding: 24 }}>
+        <div style={{ maxWidth: 640, margin: "0 auto" }}>
+          <button onClick={() => { setView("list"); setMsg("") }} style={{ background: "none", border: "none", color: "#2563eb", cursor: "pointer", fontSize: 14, fontWeight: 500, marginBottom: 20 }}>← 返回列表</button>
+          <h1 style={{ fontSize: 22, fontWeight: 700, color: "#0f172a", marginBottom: 24 }}>⚙️ 公司设置</h1>
+          {msg && <Msg text={msg} />}
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            {fields.map(f => (
+              <div key={f.key}>
+                <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#1e293b", marginBottom: 4 }}>{f.label}</label>
+                {f.key === "description" ? (
+                  <textarea value={settings[f.key] || ""} onChange={e => setSettings({...settings, [f.key]: e.target.value})} rows={4}
+                    style={{ width: "100%", padding: 10, border: "1px solid #cbd5e1", borderRadius: 8, fontSize: 14, outline: "none", resize: "vertical" }} />
+                ) : (
+                  <input value={settings[f.key] || ""} onChange={e => setSettings({...settings, [f.key]: e.target.value})}
+                    style={{ width: "100%", padding: 10, border: "1px solid #cbd5e1", borderRadius: 8, fontSize: 14, outline: "none" }} />
+                )}
+              </div>
+            ))}
+          </div>
+          <button onClick={async () => {
+            setBusy(true); setMsg("保存中...")
+            try {
+              let newContent = content
+              for (const f of fields) {
+                if (f.key === "description") {
+                  newContent = newContent.replace(/^(  description:\s*")[^"]*(".*)/m, `$1${(settings[f.key] || "").replace(/\n/g, "\\n")}$2`)
+                } else {
+                  newContent = newContent.replace(new RegExp(`^(  ${f.key}:\\s*")[^"]*(".*)`, "m"), `$1${settings[f.key] || ""}$2`)
+                }
+              }
+              const encoded = btoa(unescape(encodeURIComponent(newContent)))
+              const body: any = { message: "更新公司设置", content: encoded, branch: "master" }
+              if (sha) body.sha = sha
+              const r = await fetch(`${API}${encodeURIComponent(token)}&path=${encodeURIComponent(fp)}`, {
+                method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body)
+              })
+              const d = await r.json()
+              if (!r.ok) throw new Error(d.message || "保存失败")
+              setSha(d.content?.sha || d.sha)
+              setContent(newContent)
+              setMsg("✅ 保存成功！")
+            } catch (e: any) { setMsg("❌ " + (e.message || "保存失败")) }
+            setBusy(false)
+          }} disabled={busy}
+            style={{ marginTop: 24, padding: "12px 32px", background: busy ? "#94a3b8" : "#059669", color: "white", border: "none", borderRadius: 8, fontSize: 15, fontWeight: 700, cursor: busy ? "default" : "pointer" }}>
+            {busy ? "保存中..." : "💾 保存设置"}
+          </button>
+        </div>
+      </main>
+    )
+  }
 
   // =========== EDITOR VIEW ===========
   if (view === "edit") return (
