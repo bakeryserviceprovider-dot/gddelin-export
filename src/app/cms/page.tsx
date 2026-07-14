@@ -96,23 +96,23 @@ type FieldDef = {
 }
 
 const PRODUCT_FIELDS: FieldDef[] = [
-  { key: "title", label: "Product Name", type: "text", placeholder: "Seafood Constant Temperature Machine" },
-  { key: "subtitle", label: "Subtitle", type: "text", placeholder: "Brief tagline for the product" },
-  { key: "category", label: "Category", type: "select", options: ["Refrigeration Equipment", "Cooling Equipment", "Heat Exchanger Components"] },
-  { key: "features", label: "Features (each line = one feature)", type: "list" },
-  { key: "applications", label: "Applications (each line = one use case)", type: "list" },
-  { key: "specifications", label: "Technical Specifications", type: "specs" },
-  { key: "certifications", label: "Certifications (e.g. CE, ISO 9001)", type: "list" },
+  { key: "title", label: "产品名称", type: "text", placeholder: "例: Seafood Constant Temperature Machine" },
+  { key: "subtitle", label: "副标题", type: "text", placeholder: "简短描述产品的亮点" },
+  { key: "category", label: "分类", type: "select", options: ["Refrigeration Equipment", "Cooling Equipment", "Heat Exchanger Components"] },
+  { key: "features", label: "产品特点（每行一个）", type: "list" },
+  { key: "applications", label: "应用领域（每行一个）", type: "list" },
+  { key: "specifications", label: "技术参数", type: "specs" },
+  { key: "certifications", label: "认证资质（如 CE, ISO 9001）", type: "list" },
 ]
 
 const BLOG_FIELDS: FieldDef[] = [
-  { key: "title", label: "Article Title", type: "text", placeholder: "How to choose..." },
-  { key: "excerpt", label: "Excerpt / Summary", type: "textarea", placeholder: "Short description for search results" },
-  { key: "date", label: "Publish Date", type: "text", placeholder: "2026-07-14" },
-  { key: "author", label: "Author", type: "text", placeholder: "Delin Engineering Team" },
-  { key: "category", label: "Category", type: "select", options: ["Buying Guide", "Technical Guide", "Maintenance", "Industry News", "Case Study"] },
-  { key: "tags", label: "Tags (each line = one tag)", type: "list" },
-  { key: "readingTime", label: "Reading Time (minutes)", type: "number" },
+  { key: "title", label: "文章标题", type: "text", placeholder: "如何选择..." },
+  { key: "excerpt", label: "摘要 / 简介", type: "textarea", placeholder: "搜索引擎结果中显示的简短描述" },
+  { key: "date", label: "发布日期", type: "text", placeholder: "2026-07-14" },
+  { key: "author", label: "作者", type: "text", placeholder: "Delin Engineering Team" },
+  { key: "category", label: "分类", type: "select", options: ["Buying Guide", "Technical Guide", "Maintenance", "Industry News", "Case Study"] },
+  { key: "tags", label: "标签（每行一个）", type: "list" },
+  { key: "readingTime", label: "阅读时间（分钟）", type: "number" },
 ]
 
 // ============================================================
@@ -150,7 +150,7 @@ export default function CMSPage() {
   // ============================================================
   const loadFile = useCallback(async (path: string) => {
     setBusy(true)
-    show("Loading...")
+    show("加载中...")
     try {
       const res = await fetch(`${API_PROXY}${encodeURIComponent(token)}&path=${encodeURIComponent(path)}`)
       if (!res.ok) { const err = await res.json(); throw new Error(err.message || `HTTP ${res.status}`) }
@@ -203,7 +203,7 @@ export default function CMSPage() {
       setPage("editor")
       setMsg(null)
     } catch (e: any) {
-      show("⚠️ " + (e.message || "Failed to load"))
+      show("⚠️ " + (e.message || "加载失败"))
     }
     setBusy(false)
   }, [token])
@@ -214,7 +214,7 @@ export default function CMSPage() {
   const saveFile = async () => {
     if (!editingPath) return
     setBusy(true)
-    show("Saving...")
+    show("保存中...")
     try {
       let fileContent = ""
 
@@ -236,7 +236,7 @@ export default function CMSPage() {
       const data = await res.json()
       if (!res.ok) throw new Error(data.message || "Save failed")
       setFileSha(data.content?.sha || data.sha)
-      show("✅ Saved! Vercel deploying now.", true)
+      show("✅ 保存成功！正在自动部署...", true)
     } catch (e: any) {
       show("⚠️ " + (e.message || "Save failed"))
     }
@@ -274,8 +274,8 @@ export default function CMSPage() {
         <div style={{ background: "white", padding: 40, borderRadius: 16, boxShadow: "0 4px 24px rgba(0,0,0,0.06)", maxWidth: 420, width: "100%" }}>
           <div style={{ textAlign: "center", marginBottom: 24 }}>
             <div style={{ fontSize: 48, marginBottom: 8 }}>🔐</div>
-            <h1 style={{ fontSize: 22, fontWeight: 700, color: "#0f172a" }}>Delin HVAC CMS</h1>
-            <p style={{ fontSize: 14, color: "#64748b", marginTop: 4 }}>Enter your GitHub token</p>
+            <h1 style={{ fontSize: 22, fontWeight: 700, color: "#0f172a" }}>Delin HVAC 内容管理</h1>
+            <p style={{ fontSize: 14, color: "#64748b", marginTop: 4 }}>请输入你的 GitHub Token 登录</p>
           </div>
           <input type="password" value={token} onChange={(e) => setToken(e.target.value)} placeholder="ghp_..."
             onKeyDown={(e) => e.key === "Enter" && (localStorage.setItem(TOKEN_KEY, token), setAuthed(true))}
@@ -305,7 +305,7 @@ export default function CMSPage() {
               <span style={{ marginLeft: 8, fontSize: 12, color: "#94a3b8" }}>{editingPath}</span>
             </div>
             <button onClick={saveFile} disabled={busy} style={{ padding: "8px 24px", background: busy ? "#94a3b8" : "#059669", color: "white", border: "none", borderRadius: 6, fontSize: 14, fontWeight: 600, cursor: busy ? "default" : "pointer" }}>
-              {busy ? "Saving..." : "💾 Save"}
+              {busy ? "保存中..." : "💾 Save"}
             </button>
           </div>
 
@@ -344,7 +344,7 @@ export default function CMSPage() {
                 </label>
                 <textarea value={bodyContent} onChange={(e) => setBodyContent(e.target.value)} rows={10}
                   style={{ width: "100%", padding: 12, border: "1px solid #cbd5e1", borderRadius: 8, fontSize: 13, fontFamily: "inherit", lineHeight: 1.6, resize: "vertical", outline: "none", color: "#1e293b" }}
-                  placeholder="Write the main content here..." />
+                  placeholder="写正文内容..." />
               </div>
             </div>
           )}
@@ -376,10 +376,10 @@ export default function CMSPage() {
         )}
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 12, marginBottom: 28 }}>
-          <QuickLink icon="🖼️" title="Upload Images" desc="Product photos" href={`https://github.com/${REPO}/upload/master/public/images/products`} />
-          <QuickLink icon="✍️" title="New Blog Post" desc="Write SEO article" href={`https://github.com/${REPO}/new/master/src/content/blog`} />
-          <QuickLink icon="📂" title="GitHub Repo" desc="Full file access" href={`https://github.com/${REPO}`} />
-          <QuickLink icon="🚀" title="Deployments" desc="Check deploy status" href={`https://vercel.com/bakeryserviceprovider-8725s-projects/gddelin-export/deployments`} />
+          <QuickLink icon="🖼️" title="上传图片" desc="产品图片" href={`https://github.com/${REPO}/upload/master/public/images/products`} />
+          <QuickLink icon="✍️" title="新建文章" desc="写SEO博文" href={`https://github.com/${REPO}/new/master/src/content/blog`} />
+          <QuickLink icon="📂" title="GitHub仓库" desc="完整文件" href={`https://github.com/${REPO}`} />
+          <QuickLink icon="🚀" title="部署状态" desc="查看自动部署" href={`https://vercel.com/bakeryserviceprovider-8725s-projects/gddelin-export/deployments`} />
         </div>
 
         <Section title="📦 Products">
@@ -396,8 +396,8 @@ export default function CMSPage() {
         </Section>
 
         <Section title="⚙️ Settings">
-          <FileRow label="Company Settings" desc="Name, phone, email (code file)" path="src/lib/constants.ts" onEdit={loadFile} busy={busy} />
-          <FileRow label="About Page" desc="About us page" path="src/content/pages/about.md" onEdit={loadFile} busy={busy} />
+          <FileRow label="公司设置" desc="名称、电话、邮箱（代码文件）" path="src/lib/constants.ts" onEdit={loadFile} busy={busy} />
+          <FileRow label="关于我们" desc="关于页面内容" path="src/content/pages/about.md" onEdit={loadFile} busy={busy} />
         </Section>
       </div>
     </main>
@@ -491,9 +491,9 @@ function FormField({
         <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
           <input value={listInput} onChange={(e) => onListInputChange(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && (onAddListItem(def.key), e.preventDefault())}
-            placeholder="Type and press Enter to add..." style={inputStyle} />
+            placeholder="输入后按回车添加..." style={inputStyle} />
           <button onClick={() => onAddListItem(def.key)} style={{ padding: "8px 16px", background: "#2563eb", color: "white", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 500, cursor: "pointer", whiteSpace: "nowrap" }}>
-            + Add
+            + 添加
           </button>
         </div>
         {items.map((item, i) => (
@@ -512,14 +512,14 @@ function FormField({
       <div>
         <Label text={def.label} />
         <div style={{ marginBottom: 8 }}>
-          {specs.length === 0 && <p style={{ fontSize: 12, color: "#94a3b8", fontStyle: "italic" }}>No specifications yet</p>}
+          {specs.length === 0 && <p style={{ fontSize: 12, color: "#94a3b8", fontStyle: "italic" }}>暂无规格参数</p>}
           {specs.map((spec, i) => (
             <div key={i} style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 6 }}>
               <input value={spec.label} onChange={(e) => {
                 const updated = [...specs]
                 updated[i] = { ...updated[i], label: e.target.value }
                 onUpdate(def.key, updated)
-              }} placeholder="Spec name" style={{ ...inputStyle, width: "40%" }} />
+              }} placeholder="参数名称" style={{ ...inputStyle, width: "40%" }} />
               <input value={spec.value} onChange={(e) => {
                 const updated = [...specs]
                 updated[i] = { ...updated[i], value: e.target.value }
@@ -530,7 +530,7 @@ function FormField({
           ))}
         </div>
         <button onClick={() => onUpdate(def.key, [...specs, { label: "", value: "" }])} style={{ padding: "6px 14px", background: "#f1f5f9", border: "1px solid #cbd5e1", borderRadius: 6, fontSize: 12, color: "#475569", cursor: "pointer" }}>
-          + Add Specification
+          + 添加规格
         </button>
       </div>
     )
