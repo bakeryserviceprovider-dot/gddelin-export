@@ -515,12 +515,16 @@ function Msg({ text }: { text: string }) {
 }
 
 function SlotCard({ slot, version, onUpload, busy }: { slot: {id:string;label:string;desc:string;file:string}; version?:number; onUpload:()=>void; busy:boolean }) {
+  const [imgError, setImgError] = useState(false)
   const imgUrl = slot.file + (version ? `?v=${version}` : '')
   return (
-    <div style={{ background: "white", borderRadius: 10, border: "1px solid #e2e8f0", overflow: "hidden", transition: "box-shadow 0.2s" }}>
-      <div style={{ aspectRatio: "16/9", background: "#f8fafc", display: "flex", alignItems: "center", justifyContent: "center", padding: 8, position: "relative" }}>
-        <img src={imgUrl} alt={slot.label} style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }}
-          onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; (e.target as HTMLImageElement).parentElement!.innerHTML = '<span style=\"color:#94a3b8;font-size:12px\">暂无图片</span>' }} />
+    <div style={{ background: "white", borderRadius: 10, border: "1px solid #e2e8f0", overflow: "hidden" }}>
+      <div style={{ aspectRatio: "16/9", background: "#f8fafc", display: "flex", alignItems: "center", justifyContent: "center", padding: 8 }}>
+        {imgError ? (
+          <span style={{ color: "#94a3b8", fontSize: 12 }}>暂无图片</span>
+        ) : (
+          <img src={imgUrl} alt={slot.label} onError={() => setImgError(true)} style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }} />
+        )}
       </div>
       <div style={{ padding: "10px 12px" }}>
         <div style={{ fontSize: 13, fontWeight: 600, color: "#1e293b" }}>{slot.label}</div>
