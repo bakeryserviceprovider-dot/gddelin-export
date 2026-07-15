@@ -60,7 +60,7 @@ function extract(text: string, key: string): string {
 export default function CMSPage() {
   const [token, setToken] = useState("")
   const [authed, setAuthed] = useState(false); const [loaded, setLoaded] = useState(false)
-  const [view, setView] = useState<"list" | "edit" | "upload">("list")
+  const [view, setView] = useState<"list" | "edit" | "upload" | "media">("list")
   const [fp, setFp] = useState(""); const [fl, setFl] = useState("")
   const [content, setContent] = useState(""); const [sha, setSha] = useState("")
   const [msg, setMsg] = useState(""); const [busy, setBusy] = useState(false)
@@ -179,6 +179,96 @@ export default function CMSPage() {
       </div>
     </main>
   )
+
+  // =========== MEDIA MANAGER VIEW ===========
+  if (view === "media") {
+    const SLOTS = [
+      { id: "home-hero", label: "🏠 首页主横幅", desc: "Hero 大背景图 (1920×800)", file: "/images/slots/home-hero.svg" },
+      { id: "home-banner-1", label: "📢 横幅轮播 1", desc: "首页轮播图 (1200×500)", file: "/images/slots/banner-1.svg" },
+      { id: "home-banner-2", label: "📢 横幅轮播 2", desc: "首页轮播图 (1200×500)", file: "/images/slots/banner-2.svg" },
+      { id: "product-seafood", label: "🐟 海鲜恒温机主图", desc: "产品展示", file: "/images/products/seafood-machine-1.svg" },
+      { id: "product-chiller", label: "❄️ 工业冷水机主图", desc: "产品展示", file: "/images/products/industrial-chiller-1.svg" },
+      { id: "product-titanium", label: "🔄 钛蒸发器主图", desc: "产品展示", file: "/images/products/titanium-evaporator-1.svg" },
+      { id: "product-heat-exchanger", label: "⚡ 换热器主图", desc: "产品展示", file: "/images/products/heat-exchanger-1.svg" },
+      { id: "about-image", label: "🏢 关于我们配图", desc: "关于页面展示", file: "/images/slots/about.svg" },
+    ]
+    const [imgVersions, setImgVersions] = useState<Record<string,number>>({})
+
+    async function uploadSlotImage(slotId: string, currentFile: string) {
+      const input = document.createElement('input')
+      input.type = 'file'
+      input.accept = 'image/*'
+      input.onchange = async () => {
+        const file = input.files?.[0]
+        if (!file) return
+        const ext = file.name.split('.').pop() || 'svg'
+        // Determine folder from slot
+        const isProduct = slotId.startsWith('product-')
+        const path = isProduct
+          ? `public/images/products/${slotId.replace('product-','')}.${ext}`
+          : `public/images/slots/${slotId}.${ext}`
+        setBusy(true); setMsg(`上传 ${slotId}...`)
+        try {
+          const reader = new FileReader()
+          reader.onload = async () => {
+            const base64 = (reader.result as string).split(',')[1]
+            const r = await fetch(`${API}${encodeURIComponent(token)}&path=${encodeURIComponent(path)}`, {
+              method: "PUT", headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ message: `更新图片: ${slotId}`, content: base64, branch: "master" })
+            })
+            const d = await r.json()
+            if (!r.ok) throw new Error(d.message || "上传失败")
+            setImgVersions(prev => ({...prev, [slotId]: Date.now()}))
+            setMsg(`✅ ${slotId} 上传成功！`)
+          }
+          reader.readAsDataURL(file)
+        } catch (e: any) { setMsg("❌ " + (e.message || "上传失败")) }
+        setBusy(false)
+      }
+      input.click()
+    }
+
+    return (
+      <main style={{ minHeight: "100vh", background: "#f8fafc", padding: 24 }}>
+        <div style={{ maxWidth: 960, margin: "0 auto" }}>
+          <button onClick={() => { setView("list"); setMsg("") }} style={{ background: "none", border: "none", color: "#2563eb", cursor: "pointer", fontSize: 14, fontWeight: 500, marginBottom: 20 }}>← 返回首页</button>
+          <h1 style={{ fontSize: 22, fontWeight: 700, color: "#0f172a", marginBottom: 4 }}>🖼️ 图片管理</h1>
+          <p style={{ fontSize: 13, color: "#64748b", marginBottom: 24 }}>点图片下方的「替换」按钮上传新图，上传后刷新前台即可看到变化</p>
+          {msg && <Msg text={msg} />}
+
+          {/* Hero & Banner section */}
+          <div style={{ marginBottom: 28 }}>
+            <h2 style={{ fontSize: 15, fontWeight: 700, color: "#0f172a", marginBottom: 12, paddingBottom: 8, borderBottom: "1px solid #e2e8f0" }}>📌 首页横幅</h2>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 16 }}>
+              {SLOTS.filter(s => s.id.startsWith("home-")).map(slot => (
+                <SlotCard key={slot.id} slot={slot} version={imgVersions[slot.id]} onUpload={() => uploadSlotImage(slot.id, slot.file)} busy={busy} />
+              ))}
+            </div>
+          </div>
+
+          {/* Product images */}
+          <div style={{ marginBottom: 28 }}>
+            <h2 style={{ fontSize: 15, fontWeight: 700, color: "#0f172a", marginBottom: 12, paddingBottom: 8, borderBottom: "1px solid #e2e8f0" }}>📦 产品图片</h2>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 16 }}>
+              {SLOTS.filter(s => s.id.startsWith("product-")).map(slot => (
+                <SlotCard key={slot.id} slot={slot} version={imgVersions[slot.id]} onUpload={() => uploadSlotImage(slot.id, slot.file)} busy={busy} />
+              ))}
+            </div>
+          </div>
+
+          {/* Other images */}
+          <div style={{ marginBottom: 28 }}>
+            <h2 style={{ fontSize: 15, fontWeight: 700, color: "#0f172a", marginBottom: 12, paddingBottom: 8, borderBottom: "1px solid #e2e8f0" }}>🏢 其他配图</h2>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 16 }}>
+              {SLOTS.filter(s => !s.id.startsWith("home-") && !s.id.startsWith("product-")).map(slot => (
+                <SlotCard key={slot.id} slot={slot} version={imgVersions[slot.id]} onUpload={() => uploadSlotImage(slot.id, slot.file)} busy={busy} />
+              ))}
+            </div>
+          </div>
+        </div>
+      </main>
+    )
+  }
 
   // =========== UPLOAD VIEW ===========
   if (view === "upload") return (
@@ -384,7 +474,7 @@ export default function CMSPage() {
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 10, marginBottom: 20 }}>
-          <Btn icon="🖼️" title="上传图片" onClick={() => { setMsg(""); setView("upload") }} />
+          <Btn icon="🖼️" title="图片管理" onClick={() => { setMsg(""); setView("media") }} />
           <Btn icon="✍️" title="新建博客" onClick={() => { setMsg(""); setDialog("blog") }} />
           <Btn icon="➕" title="新增产品" onClick={() => { setMsg(""); setDialog("product") }} />
           <Btn icon="📂" title="GitHub" href={`https://github.com/${REPO}`} />
@@ -422,4 +512,23 @@ function Btn({ icon, title, href, onClick }: { icon: string; title: string; href
 function Msg({ text }: { text: string }) {
   const isOk = text.includes("✅"); const isErr = text.includes("❌")
   return <div style={{ padding: "8px 14px", background: isOk ? "#f0fdf4" : isErr ? "#fef2f2" : "#f8fafc", color: isOk ? "#166534" : isErr ? "#991b1b" : "#0f172a", borderRadius: 8, marginBottom: 12, fontSize: 13 }}>{text}</div>
+}
+
+function SlotCard({ slot, version, onUpload, busy }: { slot: {id:string;label:string;desc:string;file:string}; version?:number; onUpload:()=>void; busy:boolean }) {
+  const imgUrl = slot.file + (version ? `?v=${version}` : '')
+  return (
+    <div style={{ background: "white", borderRadius: 10, border: "1px solid #e2e8f0", overflow: "hidden", transition: "box-shadow 0.2s" }}>
+      <div style={{ aspectRatio: "16/9", background: "#f8fafc", display: "flex", alignItems: "center", justifyContent: "center", padding: 8, position: "relative" }}>
+        <img src={imgUrl} alt={slot.label} style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }}
+          onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; (e.target as HTMLImageElement).parentElement!.innerHTML = '<span style=\"color:#94a3b8;font-size:12px\">暂无图片</span>' }} />
+      </div>
+      <div style={{ padding: "10px 12px" }}>
+        <div style={{ fontSize: 13, fontWeight: 600, color: "#1e293b" }}>{slot.label}</div>
+        <div style={{ fontSize: 11, color: "#94a3b8", marginBottom: 8 }}>{slot.desc}</div>
+        <button onClick={onUpload} disabled={busy} style={{ width: "100%", padding: "6px 0", background: busy ? "#f1f5f9" : "#2563eb", color: busy ? "#94a3b8" : "white", border: "none", borderRadius: 5, fontSize: 12, fontWeight: 500, cursor: busy ? "default" : "pointer" }}>
+          {busy ? "上传中..." : "🔄 替换图片"}
+        </button>
+      </div>
+    </div>
+  )
 }
